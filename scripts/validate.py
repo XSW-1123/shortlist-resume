@@ -197,6 +197,27 @@ def main():
            if w("".join(x for x, b in sp if b)) / max(w(t), 1) > 0.45]
     check("无整条加粗（粗体视觉宽度 ≤ 45%）", not fat, "过粗 %s" % fat)
 
+    # 5.6 R19 之二：技能栏行内也要有重点（技能是 grid，按 block 归组：首行分类名、其余行内容）
+    sk_blocks = []
+    for _b in page.get_text("dict")["blocks"]:
+        _lines = []
+        for _l in _b.get("lines", []):
+            _sp = [(s["text"], bool(s["flags"] & BOLD))
+                   for s in _l["spans"] if s["text"].strip()]
+            if _sp:
+                _lines.append((_l["bbox"][1], _sp))
+        # 跳过板块标题块本身（否则会把「专业技能」当成一条技能）
+        if _lines and proj_rows and _lines[0][0] > proj_rows[-1][0] and \
+                "".join(x for x, _ in _lines[0][1]).strip() not in known_titles:
+            sk_blocks.append(_lines)
+    thin_sk = ["".join(x for x, _ in b[0][1])[:10] for b in sk_blocks
+               if len(b) < 2 or not any(f for _, sp in b[1:] for _, f in sp)]
+    check("每行技能至少 1 处行内加粗", not thin_sk, "偏少 %s" % thin_sk)
+    sk_content = sum(len(b) - 1 for b in sk_blocks)
+    check("技能条数 == 技能行数且内容行 ≤ 条数+1",
+          len(sk_blocks) == len(data.get("skills") or []) and sk_content <= len(sk_blocks) + 1,
+          "条数 %d / 内容行 %d" % (len(sk_blocks), sk_content))
+
     # 6. 岗位相关性与词表（R1 / R7 / R9）
     # 视觉换行与中英混排空格会影响逐字比对，两侧统一去掉全部空白后再比。
     norm = lambda s: re.sub(r"\s+", "", str(s))
