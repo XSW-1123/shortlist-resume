@@ -3,8 +3,8 @@
 **Stop listing skills. Start getting shortlisted.**
 **别再罗列技能了，把简历写成面试官愿意深挖的那一页。**
 
-一个 WorkBuddy skill：先主动把你的真实经历问清楚，再把每一行都钉在可核验的出处上，最后交付一页、机器可解析、扛得住三层追问的中文简历。
-A WorkBuddy skill that interviews you for the facts, pins every line to a verifiable source, then ships a one-page, ATS-readable Chinese resume that survives three rounds of interviewer follow-ups.
+一个**不绑定任何平台的通用简历技能包**：遵循 `SKILL.md` 约定，可放进任意兼容的 Agent 技能目录；也可以完全不用 Agent，直接跑 Python 脚本。它先主动把你的真实经历问清楚，再把每一行都钉在可核验的出处上，最后交付一页、机器可解析、扛得住三层追问的中文简历。
+A **platform-agnostic resume skill package**: drop it into any `SKILL.md`-compatible agent's skills directory, or run the Python scripts standalone with no agent at all. It interviews you for the facts, pins every line to a verifiable source, then ships a one-page, ATS-readable Chinese resume that survives three rounds of interviewer follow-ups.
 
 ---
 
@@ -56,28 +56,31 @@ A WorkBuddy skill that interviews you for the facts, pins every line to a verifi
 
 ## 安装 / Install
 
-WorkBuddy 用户级 skill（跨项目可用）：
+不依赖任何特定产品，两种用法任选。No vendor lock-in — pick either path.
+
+**方式一 · 作为 Agent 技能包** / As an agent skill package（任何支持 `SKILL.md` + YAML frontmatter 约定的 Agent 都能加载）：
 
 ```bash
 git clone https://github.com/XSW-1123/shortlist-resume.git
-cp -r shortlist-resume ~/.workbuddy/skills/
+cp -r shortlist-resume "$AGENT_SKILLS_DIR"/
 ```
 
-Windows（PowerShell）：
-
-```powershell
-git clone https://github.com/XSW-1123/shortlist-resume.git
-Copy-Item -Recurse .\shortlist-resume "$env:USERPROFILE\.workbuddy\skills\"
-```
-
-依赖（Python 3.10+）：
-
-```bash
-python -m pip install typst pyyaml python-docx pymupdf
-```
-
-安装后在对话里说「帮我写一份 Java 后端实习简历」「按这份 JD 改简历」「检查我的简历能不能过初筛」即可触发。
+Windows 同理，把整个 `shortlist-resume/` 目录复制进你的 Agent 读取技能的目录即可。加载后在对话里说「帮我写一份 Java 后端实习简历」「按这份 JD 改简历」「检查我的简历能不能过初筛」即可触发。
 Then say "write me a resume for a Java backend internship", "tailor my resume to this JD", or "will my resume pass first-round screening".
+
+**方式二 · 纯命令行** / Standalone CLI（完全不需要 Agent，`SKILL.md` 与 `references/` 当人工 SOP 读，或喂给任意模型）：
+
+```bash
+git clone https://github.com/XSW-1123/shortlist-resume.git
+cd shortlist-resume
+python -m pip install typst pyyaml python-docx pymupdf
+cp assets/resume.template.yaml source.yaml   # 填写真实信息
+python scripts/build_resume.py source.yaml --out deliver
+python scripts/validate.py --deliver deliver
+```
+
+依赖仅 Python 3.10+ 与 4 个 pip 包，跨平台可用；中文字体按操作系统自动探测，也可在 `source.yaml` 的 `theme.font` 指定。
+Only Python 3.10+ and four pip packages; works on Windows, macOS and Linux. The CJK font is auto-detected and can be overridden via `theme.font`.
 
 ## 使用 / Use
 
