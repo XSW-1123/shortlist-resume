@@ -26,18 +26,20 @@ education:
       - "**实践与交付**｜课程设计「图书馆座位预约」后端独立完成，含接口联调与数据初始化脚本"
 
 skills:
+  # 每行点 2–4 个「面试官会顺着问下一个问题」的短词；长串（四个框架名全串）不要加粗，
+  # 会加宽字面把接近满宽的行挤折。长行可用 \n 显式换行把两行调匀（见「数据库」行）。
   - label: Java 基础
-    details: 熟悉 Java 21 集合与并发；理解 ThreadLocal、线程池拒绝策略与事务失效；了解 JVM / GC
+    details: 熟悉 **Java 21 集合与并发**；理解 **ThreadLocal**、线程池拒绝策略与**事务失效**；了解 JVM / GC
   - label: 后端框架
-    details: 熟练 SpringBoot / SpringMVC / Spring Security / MyBatis-Plus；理解 IoC / AOP 与自动装配
+    details: 熟练 **SpringBoot** / SpringMVC / **Spring Security** / **MyBatis-Plus**；理解 **IoC / AOP** 与自动装配
   - label: 数据库
-    details: 熟悉 MySQL 8 索引 / B+ 树 / 最左前缀 / EXPLAIN、隔离级别；理解 MVCC / 行锁；掌握唯一索引与条件更新幂等
+    details: "熟悉 MySQL 8 索引 / **B+ 树** / **最左前缀** / **EXPLAIN**、隔离级别；理解 **MVCC / 行锁**；\n掌握唯一索引与条件更新幂等"
   - label: 缓存中间件
-    details: 熟悉 Redis 数据结构 / Lua、Redisson 分布式锁；掌握缓存一致性、穿透 / 击穿 / 雪崩治理
+    details: 熟悉 **Redis** 数据结构 / **Lua**、**Redisson 分布式锁**；掌握**缓存一致性**、穿透 / 击穿 / 雪崩治理
   - label: 接口与安全
-    details: 熟悉 RESTful 接口设计、JWT 鉴权与越权防护、字段脱敏；掌握滑动窗口限流与接口防重放
+    details: 熟悉 RESTful 接口设计、**JWT 鉴权**与**越权防护**、字段脱敏；掌握**滑动窗口限流**与接口防重放
   - label: 工程化
-    details: 熟练 Git、Maven、Linux 与多模块构建；掌握接口文档、可观测性（日志 / 指标 / 链路）
+    details: 熟练 Git、**Maven**、**Linux** 与多模块构建；掌握接口文档、**可观测性**（日志 / 指标 / 链路）
 
 projects:
   - name: 示例图书馆座位预约系统
