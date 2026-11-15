@@ -146,13 +146,23 @@ def section(title, body, gap, theme) -> str:
 def typ_education(data, sp, theme):
     out = []
     for e in data.get("education", []):
+        # period 可缺省：学员常只写「2027 届」，不缺年份就不该渲染一个有日期的行。
+        period = (e.get("period") or "").strip()
+        if period:
+            row = (
+                f'#grid(columns: (1fr, auto),\n'
+                f'  [#text(size: 10.5pt, weight: "bold")[{esc(e["school"])}]'
+                f'#h(0.7em)#text(size: 10pt)[{esc(e["major"])}]],\n'
+                f'  [#text(size: 9pt, fill: rgb("#{theme["muted"]}"))[{esc(period)}]]\n'
+                f')\n'
+            )
+        else:
+            row = (
+                f'#text(size: 10.5pt, weight: "bold")[{esc(e["school"])}]'
+                f'#h(0.7em)#text(size: 10pt)[{esc(e["major"])}]\n'
+            )
         out.append(
-            f'#v(0.1em)\n'
-            f'#grid(columns: (1fr, auto),\n'
-            f'  [#text(size: 10.5pt, weight: "bold")[{esc(e["school"])}]'
-            f'#h(0.7em)#text(size: 10pt)[{esc(e["major"])}]],\n'
-            f'  [#text(size: 9pt, fill: rgb("#{theme["muted"]}"))[{esc(e["period"])}]]\n'
-            f')\n'
+            f'#v(0.1em)\n{row}'
             f'{bullets(e.get("highlights"), sp["bul_gap"], theme["accent"])}'
         )
     return "\n".join(out)
@@ -171,13 +181,25 @@ def typ_skills(data, sp, theme):
     return "\n".join(out)
 
 
-def typ_items(items, sp, theme):
+def typ_items(items, sp, theme, labels=None):
+    """条目块：项目名 + 技术栈 + 简介 + 亮点。
+
+    三层标签是简历可读性的关键（示例实证 5/5）：HR 扫简历时先找「技术栈」看关键词
+    匹配，再找「亮点」看做过什么。缺了标签，整块会退化成一段连续文字。
+    标签可用内容源里的 labels: {tech_stack, desc, highlights} 覆盖（写英文简历时用）。
+    """
+    lb = {"tech_stack": "技术栈", "desc": "项目简介", "highlights": "技术亮点"}
+    lb.update(labels or {})
     out = []
     accent = theme["accent"]
     muted = theme["muted"]
+    ink = theme["ink"]
     bul_gap = sp["bul_gap"]
     for i, p in enumerate(items or []):
         gap = "0.1em" if i == 0 else "0.7em"
+        period = (p.get("period") or "").strip()
+        right = (f'[#text(size: 9pt, fill: rgb("#{muted}"))[{esc(period)}]]'
+                 if period else "[]")
         out.append(
             f'#v({gap})\n'
             f'#grid(columns: (1fr, auto), align: (left + bottom, right + bottom),\n'
@@ -185,13 +207,19 @@ def typ_items(items, sp, theme):
             f'#text(size: 10.5pt, weight: "bold")[{esc(p["name"])}]'
             f'   #h(0.55em)#text(size: 9pt, fill: rgb("#{muted}"))'
             f'[{esc(p.get("tag", ""))}]],\n'
-            f'  [#text(size: 9pt, fill: rgb("#{muted}"))[{esc(p["period"])}]]\n'
+            f'  {right}\n'
             f')\n'
             f'#v(0.2em)\n'
+            f'#text(size: 9pt, weight: "bold", fill: rgb("#{muted}"))'
+            f'[{esc(lb["tech_stack"])}]'
             f'#text(size: 9pt, fill: rgb("#{muted}"))'
-            f'[技术栈　{esc(p.get("tech", ""))}]\n'
+            f'[　{esc(p.get("tech", ""))}]\n'
             f'#v(0.3em)\n'
-            f'#text(size: 10pt)[{rich(p.get("desc", ""))}]\n'
+            f'#text(size: 10pt, weight: "bold", fill: rgb("#{ink}"))[{esc(lb["desc"])}]'
+            f'#text(size: 10pt)[　{rich(p.get("desc", ""))}]\n'
+            f'#v(0.42em)\n'
+            f'#text(size: 10pt, weight: "bold", fill: rgb("#{ink}"))'
+            f'[{esc(lb["highlights"])}]\n'
             f'{bullets(p.get("bullets"), bul_gap, accent)}'
         )
     return "\n".join(out)
@@ -242,11 +270,12 @@ def build_typst(data, base, root, font, theme, sp, order) -> str:
         out.append(section("个人优势", f'#text(size: 10pt)[{rich(data["summary"])}]',
                            sp["sec_gap"], theme))
 
+    labels = data.get("labels")
     bodies = {
         "education": typ_education(data, sp, theme),
         "skills": typ_skills(data, sp, theme),
-        "projects": typ_items(data.get("projects"), sp, theme),
-        "internship": typ_items(data.get("internship"), sp, theme),
+        "projects": typ_items(data.get("projects"), sp, theme, labels),
+        "internship": typ_items(data.get("internship"), sp, theme, labels),
     }
     for key in order:
         if bodies.get(key):
@@ -292,7 +321,9 @@ def _section(doc, title, font, theme):
     p.append(border)
 
 
-def _docx_items(doc, items, font, theme):
+def _docx_items(doc, items, font, theme, labels=None):
+    lb = {"tech_stack": "技术栈", "desc": "项目简介", "highlights": "技术亮点"}
+    lb.update(labels or {})
     for item in items or []:
         par = doc.add_paragraph()
         par.paragraph_format.space_before = Pt(7)
@@ -300,9 +331,14 @@ def _docx_items(doc, items, font, theme):
         par.paragraph_format.tab_stops.add_tab_stop(Cm(18.0), 2)
         _font(par.add_run(item["name"]), 10.5, font, True)
         _font(par.add_run("　" + item.get("tag", "")), 9, font, color=theme["muted"])
-        _font(par.add_run("\t" + item["period"]), 9, font, color=theme["muted"])
-        _rich(doc, "技术栈　" + item.get("tech", ""), font, 9, theme["muted"], after=1)
-        _rich(doc, item.get("desc", ""), font, 10, after=1)
+        period = (item.get("period") or "").strip()
+        if period:
+            _font(par.add_run("\t" + period), 9, font, color=theme["muted"])
+        # 与 PDF 同一套三层标签（R19），避免用户在 Word 里改一版就回到无层次的平铺排版
+        _rich(doc, f"**{lb['tech_stack']}**　" + item.get("tech", ""),
+              font, 9, theme["muted"], after=1)
+        _rich(doc, f"**{lb['desc']}**　" + item.get("desc", ""), font, 10, after=2)
+        _rich(doc, f"**{lb['highlights']}**", font, 10, after=0.5)
         for b in item.get("bullets", []):
             _rich(doc, "• " + b, font, 10, indent=0.45, first=-0.45, after=1.6)
 
@@ -365,7 +401,9 @@ def build_docx(data, base, out_path, font, theme, order):
                 par.paragraph_format.tab_stops.add_tab_stop(Cm(18.0), 2)
                 _font(par.add_run(e["school"]), 10.5, font, True)
                 _font(par.add_run("　" + e["major"]), 10, font)
-                _font(par.add_run("\t" + e["period"]), 9, font, color=theme["muted"])
+                _period = (e.get("period") or "").strip()  # period 可缺省
+                if _period:
+                    _font(par.add_run("\t" + _period), 9, font, color=theme["muted"])
                 for h in e.get("highlights", []):
                     _rich(doc, "• " + h, font, 10, indent=0.45, first=-0.45, after=1.2)
         elif key == "skills":
@@ -375,11 +413,11 @@ def build_docx(data, base, out_path, font, theme, order):
         elif key == "projects":
             if data.get("projects"):
                 _section(doc, SECTION_TITLES[key], font, theme)
-                _docx_items(doc, data["projects"], font, theme)
+                _docx_items(doc, data["projects"], font, theme, data.get("labels"))
         elif key == "internship":
             if data.get("internship"):
                 _section(doc, SECTION_TITLES[key], font, theme)
-                _docx_items(doc, data["internship"], font, theme)
+                _docx_items(doc, data["internship"], font, theme, data.get("labels"))
 
     doc.save(str(out_path))
     return out_path
