@@ -1,0 +1,59 @@
+# 虚构演示数据：人物、学校、项目、数字全部编造，不可投递。
+# 用途：验证「渲染 → 自检」链路能端到端跑通，并展示成品长什么样。
+# 试跑：python scripts/build_resume.py assets/demo.yaml --out /tmp/demo-build
+#       python scripts/validate.py --deliver /tmp/demo-build --role-profile assets/demo-role-profile.yaml
+
+name: 林知远
+intent: Java 后端开发实习生
+availability: "随时到岗 ｜ 每周 5 天 ｜ 可连续实习 6 个月以上 ｜ 杭州 / 南京"
+contacts:
+  - "138-0000-0000"
+  - "demo@example.com"
+  - "github.com/example"
+
+output_stem: "林知远_Java后端实习_2027届"
+leading: 0.52em
+spacing: relaxed
+section_order: [education, projects, skills]
+
+education:
+  - school: 示例大学
+    major: 软件工程 · 本科（2027 届）
+    period: 2023.09 – 2027.06
+    highlights:
+      - "**GPA 4.30，专业排名 2/40（前 5%）**，连续 3 学期一等奖学金"
+      - "**科研与成果**｜校级大创 1 项（已结题）· 软件著作权 1 项（已登记）"
+      - "**实践与交付**｜课程设计「图书馆座位预约」后端独立完成，含接口联调与数据初始化脚本"
+
+skills:
+  - label: Java 基础
+    details: 熟悉 Java 21 集合与并发；理解 ThreadLocal、线程池拒绝策略与事务失效；了解 JVM / GC
+  - label: 后端框架
+    details: 熟练 SpringBoot / SpringMVC / Spring Security / MyBatis-Plus；理解 IoC / AOP 与自动装配
+  - label: 数据库
+    details: 熟悉 MySQL 8 索引 / B+ 树 / 最左前缀 / EXPLAIN、隔离级别；理解 MVCC / 行锁；掌握唯一索引与条件更新幂等
+  - label: 缓存中间件
+    details: 熟悉 Redis 数据结构 / Lua、Redisson 分布式锁；掌握缓存一致性、穿透 / 击穿 / 雪崩治理
+  - label: 接口与安全
+    details: 熟悉 RESTful 接口设计、JWT 鉴权与越权防护、字段脱敏；掌握滑动窗口限流与接口防重放
+  - label: 工程化
+    details: 熟练 Git、Maven、Linux 与多模块构建；掌握接口文档、可观测性（日志 / 指标 / 链路）
+
+projects:
+  - name: 示例图书馆座位预约系统
+    tag: Java 后端 · 单人独立交付
+    period: 2026.07 – 2026.10
+    tech: Java 21 · SpringBoot 3.3 · MyBatis-Plus · Spring Security · MySQL 8 · Redis / Redisson / Caffeine
+    desc: >-
+      面向校内座位预约的 Java 后端服务，单人从 0 设计 Maven 三模块、12 张表与 64 个 REST 接口；围绕重复预约、热点读与越权访问三类风险实现一致性与接口安全机制。
+    bullets:
+      - "**预约幂等**：针对重复提交与网络重试，用 Redis 令牌（SETNX 发号 + Lua 原子消费，TTL 90s）、预约号唯一索引与重复键捕获三层拦截；结果缓存 240s 供重复请求复用"
+      - "**座位防超配**：把是否可占下沉到 UPDATE … WHERE seat_status = 0，由数据库行锁内原子完成，消除先查后改的并发超配窗口；冲突时返回可重试错误而非静默覆盖"
+      - "**缓存一致性**：Caffeine(4s) + Redis + DB 三级读；写操作在事务 afterCommit 后延迟双删 400ms，兜住并发读写下的旧值回填窗口；Redis 故障降级直查 DB，不阻断预约主链路"
+      - "**缓存三问治理**：空值标记（4min）防穿透、Redisson 锁 + 双重检查防击穿、TTL 抖动 0–480s 防雪崩；击穿锁等待 2s / 租期 8s，避免并发重建线程堆积"
+      - "**接口鉴权与越权防护**：Spring Security + JWT 双角色路由级鉴权，401 / 403 统一 JSON 出口；9 处注解式字段脱敏、userId 二次校验，64 个接口无鉴权与越权漏洞"
+      - "**横切机制注解化**：限流 / 防重放 / 多实例定时任务互斥收敛为注解 + AOP；ZSET + Lua 滑动窗口（登录 / 预约 8 次 60 秒）在 Redis 故障时 fail-open 保可用，6 处 X-Nonce 防重放"
+      - "**超时释放与实时推送**：事务 afterCommit 后才投递 Redisson 延迟队列释放 20 分钟未签到座位，每 4 分钟扫描 120 单兜底漏投；WebSocket 同样在提交后异步广播，推送失败不影响主链路"
+      - "**数据层与 SQL**：预约冲突记录用 ON DUPLICATE KEY UPDATE 原子 upsert 替代先查后写；MyBatis-Plus 分页插件、自动填充与防全表更新，3 个手写 Mapper 处理复杂 SQL 并用 EXPLAIN 核对执行计划"
+      - "**可观测性与接口规范**：全局异常经 @RestControllerAdvice 翻译为统一 Result 信封；SpringDoc 维护 64 个接口文档，Actuator + Micrometer 暴露 health / metrics 与缓存命中率"
+      - "**异步链路可追踪**：@Async 不传递 ThreadLocal，用 AsyncConfig + MdcTaskDecorator 搬运 MDC 快照、finally 还原避免线程复用串号；异步任务与 WebSocket 广播日志均带 traceId，串联预约主链路"
