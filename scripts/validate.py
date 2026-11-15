@@ -166,6 +166,37 @@ def main():
     check("项目 bullet 全部 ≤ 2 行", not over and len(starts) > 0,
           "bullet %d 条 / 超长 %s" % (len(starts), over))
 
+    # 5.5 R19：项目块三层标签 + 条内局部加粗
+    # 用 span 级 bold flag 核验（文本层看不出加粗，这正是「整条加粗 / 只加粗小标题」
+    # 这类退化能混过去的原因）。
+    BOLD = 16
+    lb = {"tech_stack": "技术栈", "desc": "项目简介", "highlights": "技术亮点"}
+    lb.update(data.get("labels") or {})
+    spans = []
+    for _b in page.get_text("dict")["blocks"]:
+        for _l in _b.get("lines", []):
+            _sp = [(s["text"], bool(s["flags"] & BOLD))
+                   for s in _l["spans"] if s["text"].strip()]
+            if _sp:
+                spans.append((_l["bbox"][1], "".join(t for t, _ in _sp).strip(), _sp))
+    if proj_rows:
+        lo, hi = proj_rows[0][0], proj_rows[-1][0] + 1
+        block = [(t, sp) for y, t, sp in spans if lo <= y < hi]
+    else:
+        block = []
+    found = {t.split("　")[0] for t, _ in block if t.split("　")[0] in lb.values()}
+    check("项目块三层标签齐备", found == set(lb.values()), "实得 %s" % sorted(found))
+    lab = [(t, sp) for t, sp in block if t.split("　")[0] in lb.values()]
+    check("标签本身加粗", all(sp[0][1] for _, sp in lab if sp),
+          "未加粗 %s" % [t[:6] for t, sp in lab if sp and not sp[0][1]])
+    w = lambda s: sum(1.0 if ord(c) > 0x2E80 else 0.55 for c in s)
+    pbul = [(t, sp) for t, sp in block if t.startswith("•")]
+    thin = [t[:14] for t, sp in pbul if sum(1 for x, b in sp if b) < 2]
+    check("每条 bullet ≥ 2 处局部加粗", not thin, "偏少 %s" % thin)
+    fat = [t[:14] for t, sp in pbul
+           if w("".join(x for x, b in sp if b)) / max(w(t), 1) > 0.45]
+    check("无整条加粗（粗体视觉宽度 ≤ 45%）", not fat, "过粗 %s" % fat)
+
     # 6. 岗位相关性与词表（R1 / R7 / R9）
     # 视觉换行与中英混排空格会影响逐字比对，两侧统一去掉全部空白后再比。
     norm = lambda s: re.sub(r"\s+", "", str(s))
