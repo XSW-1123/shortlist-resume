@@ -52,7 +52,11 @@ def esc(text) -> str:
 
 
 def rich(text) -> str:
-    """Convert **bold** spans to Typst #strong[]."""
+    """Convert **bold** spans to Typst #strong[]; newlines become #linebreak().
+
+    换行是内容源里少数合法的排版指令：技能栏每行都接近满宽，个别行折出来的尾字
+    太少（只剩 5–6 字），用显式换行把两行调匀，比硬压内容或让排版随机折好看。
+    """
     text = str(text)
     out, i = [], 0
     while True:
@@ -67,7 +71,7 @@ def rich(text) -> str:
             break
         out.append("#strong[" + esc(text[a + 2:b]) + "]")
         i = b + 2
-    return "".join(out)
+    return "".join(out).replace("\n", "#linebreak()")
 
 
 def resolve_font(config_font=None, cli_font=None) -> str:
@@ -171,12 +175,14 @@ def typ_education(data, sp, theme):
 def typ_skills(data, sp, theme):
     out = []
     for s in data.get("skills", []):
+        # 分类名 10pt 加粗、内容 9.5pt：技能行大多接近满宽，行内关键词加粗会加宽
+        # 字面把行挤折；降 0.5pt 腾出约 5% 宽度，才能既点出重点又不折行（R19）。
         out.append(
             f'#v({sp["skill_gap"]})\n'
             '#grid(columns: (5.6em, 1fr), column-gutter: 0.4em, align: (left + top, left),\n'
             f'  [#text(size: 10pt, weight: "bold", fill: rgb("#{theme["accent"]}"))'
             f'[{esc(s["label"])}]],\n'
-            f'  [#text(size: 10pt)[{rich(s["details"])}]]\n)'
+            f'  [#text(size: 9.5pt)[{rich(s["details"])}]]\n)'
         )
     return "\n".join(out)
 
@@ -409,7 +415,20 @@ def build_docx(data, base, out_path, font, theme, order):
         elif key == "skills":
             _section(doc, SECTION_TITLES[key], font, theme)
             for s in data.get("skills", []):
-                _rich(doc, f"**{s['label']}**　{s['details']}", font, 10, after=2)
+                # 与 PDF 一致：分类名 10pt 加粗、内容 9.5pt 且支持 **加粗** / 换行
+                par = doc.add_paragraph()
+                par.paragraph_format.space_before = Pt(0)
+                par.paragraph_format.space_after = Pt(2)
+                _font(par.add_run(s["label"]), 10, font, True, color=theme["accent"])
+                _font(par.add_run("　"), 10, font)
+                for i, seg in enumerate(str(s["details"]).split("**")):
+                    if not seg:
+                        continue
+                    for j, part in enumerate(seg.split("\n")):
+                        if j:
+                            par.add_run().add_break()
+                        if part:
+                            _font(par.add_run(part), 9.5, font, bold=(i % 2 == 1))
         elif key == "projects":
             if data.get("projects"):
                 _section(doc, SECTION_TITLES[key], font, theme)
